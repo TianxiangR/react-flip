@@ -1,9 +1,21 @@
-export type FlippedElementPositions = {
-  [key: string]: DOMRect;
+export interface FlippedElementRect extends Omit<DOMRect, 'toJSON'> {
+  relativeLeft: number;
+  relativeTop: number;
 }
 
+export interface FlippedElementPositionDatumBeforeUpdate {
+  element: HTMLElement;
+  parent: HTMLElement;
+  childPosition: FlippedElementRect;
+}
+
+export type FlippedElementPositions = {
+  [key: string]: FlippedElementPositionDatumBeforeUpdate;
+}
+
+
 export interface ApplyFlipArgs {
-  container: HTMLElement;
+  parent: HTMLElement;
   child: HTMLElement;
   flippedElementPositionsBeforeUpdate: FlippedElementPositions;
   flipCallbacks: FlipCallbacks;
@@ -24,4 +36,10 @@ export interface OnFlipKeyUpdateArgs {
   flipCallbacks: FlipCallbacks;
   flippedElementPositionsBeforeUpdate: FlippedElementPositions;
   containerEl: HTMLElement;
+  cachedFlipIds: string[];
+}
+
+export interface FlippedElementPositionsBeforeUpdateReturnVals {
+  flippedElementPositions: FlippedElementPositions;
+  cachedFlipIds: string[];
 }

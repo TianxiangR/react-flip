@@ -1,5 +1,5 @@
 import * as  constants from './constants';
-import { FlippedElementPositions, ApplyFlipArgs, OnFlipKeyUpdateArgs } from './types';
+import { FlippedElementPositions, ApplyFlipArgs, OnFlipKeyUpdateArgs, FlippedElementPositionsBeforeUpdateReturnVals } from './types';
 
 
 export const getAllElements = (element: HTMLElement): HTMLElement[] => {
@@ -7,20 +7,40 @@ export const getAllElements = (element: HTMLElement): HTMLElement[] => {
 };
 
 export const getFlippedElementPositionsBeforeUpdate = ({
-element} : {
+element
+} : {
   element: HTMLElement;
-}): FlippedElementPositions => {
+}): FlippedElementPositionsBeforeUpdateReturnVals => {
   const flippedElements = getAllElements(element);
   const flippedElementPositions: FlippedElementPositions = {};
+  const parentRect = element.getBoundingClientRect();
   flippedElements.forEach((el) => {
     const id = el.dataset.flipId;
     if (id) {
-      const rect = el.getBoundingClientRect();
-      flippedElementPositions[id] = rect;
+      const childRect = el.getBoundingClientRect();
+      flippedElementPositions[id] = {
+        parent: element,
+        element: el,
+        childPosition: {
+          top: childRect.top,
+          left: childRect.left,
+          right: childRect.right,
+          bottom: childRect.bottom,
+          x: childRect.x,
+          y: childRect.y,
+          width: childRect.width,
+          height: childRect.height,
+          relativeLeft: childRect.left - parentRect.left,
+          relativeTop: childRect.top - parentRect.top
+        }
+      }
     }
   });
 
-  return flippedElementPositions;
+  return {
+    flippedElementPositions,
+    cachedFlipIds: Object.keys(flippedElementPositions)
+  };
 };
 
 // so far, this function is the same as getFlippedElementPositionsBeforeUpdate
@@ -39,37 +59,59 @@ export function animate(
 }
 
 export const applyFlip = ({
-  container,
+  parent,
   child,
   flippedElementPositionsBeforeUpdate,
   flipCallbacks,
   flippedElementPositionsAftereUpdate,
-  index
+  index,
 }: ApplyFlipArgs) => {
-  const containerRect = container.getBoundingClientRect();
-  const firstRect = flippedElementPositionsBeforeUpdate[child.dataset.flipId!];
-  if (!firstRect) {
+  const containerRect = parent.getBoundingClientRect();
+  const firstDatum = flippedElementPositionsBeforeUpdate[child.dataset.flipId!];
+  if (!firstDatum) {
     const onAppear = flipCallbacks[child.dataset.flipId!]?.onAppear;
     if (onAppear) {
       onAppear(child, index);
     }
     return;
   }
-  const lastRect = flippedElementPositionsAftereUpdate[child.dataset.flipId!];
-  if (!lastRect) {
+  const lastDatum = flippedElementPositionsAftereUpdate[child.dataset.flipId!];
+  if (!lastDatum) {
     const onExit = flipCallbacks[child.dataset.flipId!]?.onExit;
     if (onExit) {
-      onExit(child, index, () => {
-        child.remove();
-      });
+      // insert back to the DOM
+      if (getComputedStyle(parent).position === 'static') {
+        parent.style.position = 'relative'; // make sure the position: absolute on the child work
+      }
+
+      // move the child to the original position
+      child.style.position = 'absolute';
+      child.style.transform = 'matrix(1, 0, 0, 1, 0, 0)'; // clear the transform
+      child.style.top = `${firstDatum.childPosition.relativeTop}px`;
+      child.style.left = `${firstDatum.childPosition.relativeLeft}px`;
+      child.style.width = `${firstDatum.childPosition.width}px`;
+      child.style.height = `${firstDatum.childPosition.height}px`;
+
+      parent.appendChild(child);
+
+      debugger;
+
+      try {
+        onExit(child, index, () => {
+          parent.removeChild(child);
+        });
+      } finally {
+        // remove the flipCallbacks
+        delete flipCallbacks[child.dataset.flipId!];
+      }
     }
     return;
   }
 
-  const firstRelativeLeft = firstRect.left - containerRect.left;
-  const firstRelativeTop = firstRect.top - containerRect.top;
-  const lastRelativeLeft = lastRect.left - containerRect.left;
-  const lastRelativeTop = lastRect.top - containerRect.top;
+  const firstRelativeLeft = firstDatum.childPosition.left - containerRect.left;
+  const firstRelativeTop = firstDatum.childPosition.top - containerRect.top;
+  const lastRelativeLeft = lastDatum.childPosition.left - containerRect.left;
+  const lastRelativeTop = lastDatum.childPosition.top - containerRect.top;
 
   const deltaX = firstRelativeLeft - lastRelativeLeft;
   const deltaY = firstRelativeTop - lastRelativeTop;
@@ -98,19 +140,19 @@ export const onFlipKeyUpdate = ({
   flippedElementPositionsBeforeUpdate,
   containerEl,
 }: OnFlipKeyUpdateArgs) => {
-  const flippedElements = getAllElements(containerEl);
+  const flippedElements = Object.keys(flippedElementPositionsBeforeUpdate).map((id) => flippedElementPositionsBeforeUpdate[id].element);
   const flippedElementPositionsAftereUpdate = getFlippedPositionAfterUpdate({
     element: containerEl
   });
 
   flippedElements.forEach((child, index) => {
     applyFlip({
-      container: containerEl,
+      parent: containerEl,
       child,
       index,
       flippedElementPositionsBeforeUpdate,
       flipCallbacks,
-      flippedElementPositionsAftereUpdate,
+      flippedElementPositionsAftereUpdate: flippedElementPositionsAftereUpdate.flippedElementPositions,
     });
   });
 };

@@ -33,19 +33,12 @@ export default function FlippedWithContext(props: FlipperProps) {
   } = props;
   const flipContext = useContext(FlipContext);
 
-  useLayoutEffect(() => {
-    if (flipId) {
-      flipContext[flipId] = {
-        onAppear,
-        onExit,
-      };
-    }
-    return () => {
-      if (flipId) {
-        delete flipContext[flipId];
-      }
+  if (flipId) {
+    flipContext[flipId] = {
+      onAppear,
+      onExit,
     };
-  }, [flipContext, flipId, onAppear, onExit]);
+  }
 
   if (!children) {
     return null;

@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import { applyFlip, getAllElements, getFlippedElementPositionsBeforeUpdate, onFlipKeyUpdate } from './flipHelpers';
-import { FlipCallbacks, FlippedElementPositions } from './types';
+import { FlipCallbacks, FlippedElementPositions, FlippedElementPositionsBeforeUpdateReturnVals } from './types';
 import FlipContext from './FlipContext';
 
 export interface FlipperProps {
@@ -15,7 +15,7 @@ interface FlipperState {
 }
 
 interface FlipperSnapshot {
-  flippedElementPositionsBeforeUpdate: FlippedElementPositions;
+  flippedElementPositionsBeforeUpdate: FlippedElementPositionsBeforeUpdateReturnVals;
 }
 
 export default class Flipper extends Component<FlipperProps, FlipperState, FlipperSnapshot> {
@@ -42,8 +42,9 @@ export default class Flipper extends Component<FlipperProps, FlipperState, Flipp
       if (snapshot && this.containerEl) {
         onFlipKeyUpdate({
           flipCallbacks: this.flipCallbacks,
-          flippedElementPositionsBeforeUpdate: snapshot.flippedElementPositionsBeforeUpdate,
-          containerEl: this.containerEl
+          flippedElementPositionsBeforeUpdate: snapshot.flippedElementPositionsBeforeUpdate.flippedElementPositions,
+          containerEl: this.containerEl,
+          cachedFlipIds: snapshot.flippedElementPositionsBeforeUpdate.cachedFlipIds
         });
       }
   }
