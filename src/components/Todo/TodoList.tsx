@@ -70,7 +70,7 @@ function TodoList() {
               removeElement();
             };
               return (<Flipped key={todo.id} flipId={todo.id} onAppear={handleAppear} onExit={handleExit}>
-                <li key={todo.id} className="flex items-center justify-between w-full p-4 border-b border-gray-300">
+                <li className="flex items-center justify-between w-full p-4 border-b border-gray-300">
                   <TodoItem todo={todo} onToggle={handleToggle} onDelete={handleDelete} />
                 </li>
               </Flipped>)

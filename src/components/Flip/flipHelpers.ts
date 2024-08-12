@@ -48,15 +48,9 @@ export const applyFlip = ({
 }: ApplyFlipArgs) => {
   const containerRect = container.getBoundingClientRect();
   const firstRect = flippedElementPositionsBeforeUpdate[child.dataset.flipId!];
-  console.log('flipCallbacks', flipCallbacks);
-  console.log('firstRect', firstRect);
   if (!firstRect) {
-    console.log('flipId', child.dataset.flipId!);
-    console.log('callbacks', flipCallbacks[child.dataset.flipId!]);
     const onAppear = flipCallbacks[child.dataset.flipId!]?.onAppear;
-    console.log('onAppear', onAppear);
     if (onAppear) {
-      console.log('onAppear', child, index);
       onAppear(child, index);
     }
     return;

@@ -8,29 +8,19 @@ export interface FlipperProps extends CallbackFlippedProps {
   flipId?: string;
 }
 
-function isFunction(value: any): value is Function {
-  return typeof value === 'function';
-}
-
 function Flipped({ children, flipId }: FlipperProps) {
   let child = children
 
-  if (!isFunction(child)) {
-    try {
-      child = Children.only(children)
-    } catch (e) {
-      throw new Error('Each Flipped component must wrap a single child')
-    }
+  try {
+    child = Children.only(children)
+  } catch (e) {
+    throw new Error('Each Flipped component must wrap a single child')
   }
-
 
   const dataAttributes: DOMStringMap = {
     [constants.DATA_FLIP_ID]: flipId,
   }
 
-  if (isFunction(child)) {
-    return (child as Function)(dataAttributes)
-  }
   return cloneElement(child as ReactElement<any>, dataAttributes)
 }
 
